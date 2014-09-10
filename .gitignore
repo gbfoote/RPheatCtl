@@ -1,0 +1,11 @@
+#.gbf
+*.elf
+*.hex
+*.map
+*.o
+*.bin
+*.srec
+*~
+*#
+*.lst
+
