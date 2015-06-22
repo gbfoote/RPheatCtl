@@ -30,15 +30,15 @@ Relay = (5,  24, 23, 22, 27, 18, 17,  4)
 TT    = (21, 20, 26, 16, 19, 13, 12,  6)
 HV    = ( 7,  3,  2)
 noTsensors = 3
-dbUpdateInterval = 600   // Seconds
+dbUpdateInterval = 600   #  Seconds
 
-// Set up Serial Port
+#  Set up Serial Port
 serialPort = '/dev/ttyAMA0'
 baudRate = 38400
-serialTimeout = 1 //sec
+serialTimeout = 1 # sec
 ser = serial.Serial(serialPort, baudRate, timeout=serialTimeout)
 
-// State variables
+#  State variables
 TTstate = []
 Tstate = []
 HVstate = []
@@ -50,15 +50,15 @@ nextHeatTime = 0
 heatCycle = false
 lastOccupied = 0
 
-// Constants
+#  Constants
 heatTime = [(6, 0), (18, 0)]
-timeOutPeriod = 20 * 60   // Seconds
-tempOvershoot = 4         // degF
+timeOutPeriod = 20 * 60   #  Seconds
+tempOvershoot = 4         #  degF
     
 def getTemps():
-    // non-zero return = error
+    #  non-zero return = error
 
-    // Thermistor constants
+    #  Thermistor constants
     R0 = 10000.0
     Beta = 3977.0
     T0 = 298.15
@@ -68,12 +68,12 @@ def getTemps():
 
     key = [0xAA, 0x55]
 
-    ser.flushInput()  // Clear any random data hanging around
-    // send read request
+    ser.flushInput()  #  Clear any random data hanging around
+    #  send read request
     ser.write(key)
-    // read raw temperatures
+    #  read raw temperatures
     tempValue = []
-    reply = ser.read(2*noTsensors + len(key))  // reply is the key plus the 2-byte temp readings
+    reply = ser.read(2*noTsensors + len(key))  #  reply is the key plus the 2-byte temp readings
     if len(reply) != 2*noTsensors + len(key):
         print('read error')
         return 1
@@ -83,14 +83,14 @@ def getTemps():
     if error:
         print ('read error')
         return 1
-    del reply[0:len(key)]   // strip off the key
+    del reply[0:len(key)]   #  strip off the key
         
     Tstate = []
     for i in range(noTsensors):
         reading = reply[2*i]*256=reply[2*i+1]
         Rt = Rb * (1024.0/float(reading) - 1)
-        t = Beta/log(Rt/Rinf)                       // degK
-        Tstate.append ((t-273.15)*9.0/5.0 + 32.0)   // degF
+        t = Beta/log(Rt/Rinf)                       #  degK
+        Tstate.append ((t-273.15)*9.0/5.0 + 32.0)   #  degF
     return 0
 
 def updateNextHeatTime()
@@ -145,59 +145,59 @@ def readSensors():
     newTemps =  newTemps or !getTemps()
 
 def updateRelays():
-    // Determine tub occupancy
+    #  Determine tub occupancy
     now = time.time()
     tubOccupied = HVstate[1] or (now < lastOccupied + timeOutPeriod)
     if HVstate[1]:
         lastOccupied = now
 
-    // Determine heating cycle
+    #  Determine heating cycle
     if now > nextHeatTime:
         heatCycle = true
         updateNextHeatTime
         
-    if !HVstate[0]:  // no heat demand => up to temperature
+    if !HVstate[0]:  #  no heat demand => up to temperature
         heatCycle = false
 
     lowSpeedReq = (Tstate[1] > Tstate[0] + tempOvershoot)
 
-    if (heatCycle or tubOccupied) and HVstate[0]:  // Heat Water
-        // set R3 to demand heat from furnace
+    if (heatCycle or tubOccupied) and HVstate[0]:  #  Heat Water
+        #  set R3 to demand heat from furnace
         GPIO.output(Relay[3], true)
         if HVstate[1]:
-            // clear R1 to stop low-speed winding
+            #  clear R1 to stop low-speed winding
             GPIO.output(Relay[1], false)
-            // set R0 to run high-speed motor
+            #  set R0 to run high-speed motor
             GPIIO.output(Relay[0], true)
         else:
-            // clear R0 to stop high-speed winding
+            #  clear R0 to stop high-speed winding
             GPIO.output(Relay[0], false)
-            // set R1 to run low-speed winding
+            #  set R1 to run low-speed winding
             GPIIO.output(Relay[1], true)
-        // set R2 to connect common 
+        #  set R2 to connect common 
         GPIO.output(Relay[2], true)
-    else:                                         // Non-heated motor operation
-        // clear R3 to stop demand from furnace
+    else:                                         #  Non-heated motor operation
+        #  clear R3 to stop demand from furnace
         GPIO.output(Relay[3], false)
         if tubOccupied:
             if HVstate[1]:
-                // clear R1 to stop low-speed winding
+                #  clear R1 to stop low-speed winding
                 GPIO.output(Relay[1], false)
-                // set R0 to run high-speed winding
+                #  set R0 to run high-speed winding
                 GPIO.output(relay[0], true)
-                // set R2 to connect common
+                #  set R2 to connect common
                 GPIIO.output(Relay[2], true)
             elif HVstate[2] or lowSpeedReq:
-                // clear R0 to stop high-speed winding
+                #  clear R0 to stop high-speed winding
                 GPIO.output(Relay[0], false)
-                // set R1 to run low-speed winding
+                #  set R1 to run low-speed winding
                 GPIO.output(Relay[1], true)
-                // set R2 to connect common
+                #  set R2 to connect common
                 GPIO.output(Relay[2], true)
             else:
-                // Clear R2 to disconnect common
-                // Clear R0 to stop high-speed winding
-                // Clear R1 to stop low-speed winding
+                #  Clear R2 to disconnect common
+                #  Clear R0 to stop high-speed winding
+                #  Clear R1 to stop low-speed winding
                 GPIO.output(Relay[0:3], false)
 
 def updateDb():
