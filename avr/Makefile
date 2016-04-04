@@ -157,13 +157,13 @@ pdf: $(PRG).pdf
 	$(FIG2DEV) -L png $< $@
 
 download: $(PRG).hex
-	avrdude -p $(MCU_TARGET) -c avrisp2 -P usb -U $^
+	avrdude -p $(MCU_TARGET) -c linuxspi -P /dev/spidev0.0 -U $^
 
 terminal:
-	avrdude -p $(MCU_TARGET) -c avrisp2 -B 8 -P usb -t
+	avrdude -p $(MCU_TARGET) -c linuxspi -B 8 -P /dev/spidev0.0 -t
 
 fuses:
-	avrdude -p $(MCU_TARGET) -c avrisp2 -B 8 -P usb \
-		-U hfuse:w:0xD7:m \
-		-U lfuse:w:0xD2:m
+	avrdude -p $(MCU_TARGET) -c linuxspi -B 8 -P /dev/spidev0.0 \
+		-U hfuse:w:0xDF:m \
+		-U lfuse:w:0xE2:m
 
